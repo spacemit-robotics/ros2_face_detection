@@ -1,0 +1,13 @@
+face_detection_node:
+  ros__parameters:
+    config_path: ""
+    lazy_load: true
+    score_threshold: 0.3
+    image_topic: "/camera/image_raw"   # 直连摄像头时发布到此话题；订阅模式时从此话题收图
+    faces_topic: "/perception/faces"
+    boxes_topic: "/face_detection/boxes"
+    debug_image_topic: "/face_detection/debug_image"
+    face_label_name: "face"
+    use_camera: true    # true=直连摄像头并发布 /camera/image_raw；false=订阅 image_topic
+    camera_id: 1
+    camera_fps: 30.0
