@@ -1,0 +1,9 @@
+model_path: /tmp/nonexistent_model.onnx
+test_image: /tmp/test.jpg
+class: deploy.yolov5_face.YOLOv5FaceDetector
+default_params:
+  conf_thres: 0.25
+  iou_thres: 0.45
+  num_threads: 4
+  providers:
+    - SpaceMITExecutionProvider

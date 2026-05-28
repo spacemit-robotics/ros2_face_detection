@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -34,6 +35,10 @@ class FaceDetectionNode : public rclcpp::Node {
         std::string config_path = declare_parameter<std::string>("config_path", "");
         const bool lazy_load = declare_parameter<bool>("lazy_load", true);
         score_threshold_ = declare_parameter<double>("score_threshold", 0.3);
+        if (!std::isfinite(score_threshold_) || score_threshold_ < 0.0 ||
+            score_threshold_ > 1.0) {
+            throw std::runtime_error("score_threshold out of range, must be in [0, 1]");
+        }
         face_label_name_ = declare_parameter<std::string>("face_label_name", "face");
         image_topic_ = declare_parameter<std::string>("image_topic", "/camera/image_raw");
         debug_image_topic_ =
