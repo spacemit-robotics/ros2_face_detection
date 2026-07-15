@@ -143,26 +143,26 @@ class FaceDetectionNode : public rclcpp::Node {
     }
 
     void ProcessFrame(const std_msgs::msg::Header& header, const cv::Mat& bgr) {
-        std::vector<VisionServiceResult> results;
-        VisionServiceStatus ret = service_->InferImage(bgr, &results);
-        if (ret != VISION_SERVICE_OK) {
+        VisionServiceResponse response;
+        if (service_->Infer(bgr, &response) != VISION_SERVICE_OK || !response.ok) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "infer failed: %s",
                                     service_->LastError().c_str());
             return;
         }
 
         std::vector<face_detection::DetectionBox> boxes;
-        boxes.reserve(results.size());
-        for (const auto& r : results) {
-            if (r.score < static_cast<float>(score_threshold_)) continue;
+        boxes.reserve(response.results.size());
+        for (const auto& r : response.results) {
+            const auto* det = std::get_if<vision::Detection>(&r);
+            if (det == nullptr || det->score < static_cast<float>(score_threshold_)) continue;
             face_detection::DetectionBox b;
-            b.x1 = r.x1;
-            b.y1 = r.y1;
-            b.x2 = r.x2;
-            b.y2 = r.y2;
-            b.score = r.score;
-            b.label = r.label;
-            b.track_id = r.track_id;
+            b.x1 = det->bbox.x1;
+            b.y1 = det->bbox.y1;
+            b.x2 = det->bbox.x2;
+            b.y2 = det->bbox.y2;
+            b.score = det->score;
+            b.label = det->label;
+            b.track_id = -1;
             b.class_name = face_label_name_;
             boxes.push_back(b);
         }
@@ -171,13 +171,13 @@ class FaceDetectionNode : public rclcpp::Node {
 #ifdef HAVE_VISION_MSGS
         faces_pub_->publish(face_detection::EncodeDetection2DArray(boxes, header));
 #endif
-        PublishDebugImage(header, bgr);
+        PublishDebugImage(header, bgr, response);
     }
 
-    void PublishDebugImage(const std_msgs::msg::Header& header, const cv::Mat& bgr) {
+    void PublishDebugImage(const std_msgs::msg::Header& header, const cv::Mat& bgr,
+                            const VisionServiceResponse& response) {
         cv::Mat out_image;
-        VisionServiceStatus ret = service_->Draw(bgr, &out_image);
-        if (ret != VISION_SERVICE_OK) {
+        if (service_->Draw(bgr, response, &out_image) != VISION_SERVICE_OK) {
             return;
         }
         if (out_image.empty() || out_image.rows != bgr.rows || out_image.cols != bgr.cols) {
