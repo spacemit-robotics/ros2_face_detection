@@ -21,18 +21,32 @@ else()
   message(STATUS "face_detection: vision_msgs not found, /perception/faces disabled (install ros-humble-vision-msgs to enable)")
 endif()
 
+set(_opencv5_dir "/opt/opencv-spacemit/lib/cmake/opencv5")
+set(_opencv4_dir "/opt/opencv-spacemit/lib/cmake/opencv4")
 if(NOT DEFINED OpenCV_DIR)
-  set(OpenCV_DIR "/opt/opencv-spacemit/lib/cmake/opencv4")
+  if(EXISTS "${_opencv5_dir}/OpenCVConfig.cmake")
+    set(OpenCV_DIR "${_opencv5_dir}")
+  else()
+    set(OpenCV_DIR "${_opencv4_dir}")
+  endif()
 endif()
-find_package(OpenCV 4 REQUIRED)
-find_package(OpenCV REQUIRED
+find_package(OpenCV 5 QUIET CONFIG
   COMPONENTS core imgproc highgui
   NO_DEFAULT_PATH
 )
+if(NOT OpenCV_FOUND)
+  unset(OpenCV_DIR)
+  unset(OpenCV_DIR CACHE)
+  set(OpenCV_DIR "${_opencv4_dir}")
+  find_package(OpenCV 4 REQUIRED CONFIG
+    COMPONENTS core imgproc highgui
+    NO_DEFAULT_PATH
+  )
+endif()
 if(OpenCV_FOUND)
   message(STATUS "OpenCV found: ${OpenCV_VERSION}")
 else()
-  message(FATAL_ERROR "OpenCV not found! Set OpenCV_DIR to your opencv4 cmake path (e.g. /opt/opencv-spacemit/lib/cmake/opencv4)")
+  message(FATAL_ERROR "OpenCV not found! Set OpenCV_DIR to your opencv5/opencv4 cmake path (e.g. /opt/opencv-spacemit/lib/cmake/opencv5)")
 endif()
 
 find_package(yaml-cpp REQUIRED)
